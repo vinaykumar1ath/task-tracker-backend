@@ -26,7 +26,7 @@ envset.config({
 	path: await env(process.env.ENV_FILE)
 })
 
-const port = process.env.PORT
+const port = process.env.API_PORT
 
 import {cookie_parser, auth_jwt, task_jwt, check, login, signup, logout } from "./auth.js"
 
