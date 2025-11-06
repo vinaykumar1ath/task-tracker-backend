@@ -1,0 +1,11 @@
+#node_modules directory
+/node_modules/
+
+#mongo_database_directory
+/data/
+
+#various envs
+.env*
+
+
+
