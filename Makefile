@@ -1,27 +1,26 @@
-.PHONY: build-todolist-backend-docker-1
-build-todolist-backend-docker-1:
-	docker build -t todolist/todolist-backend:docker-1 \
-		-f ~/project/todolist-app/todolist-backend/Dockerfile.docker-1 \
-	       	~/project/todolist-app/todolist-backend/
+.PHONY: build-task-tracker-backend-local
+build-task-tracker-backend-local:
+	docker build -t task-tracker/task-tracker-backend:local \
+		-f ./Dockerfile.local \
+	       	.
 
-#.PHONY: build-todolist-backend-2
-#build-todolist-backend-2:
-#	docker build -t todolist-backend:2 \
-		-f ~/project/todolist-app/todolist-backend/Dockerfile.2 \
-	       	~/project/todolist-app/todolist-backend/
-
-.PHONY: run-todolist-backend-docker-1
-run-todolist-backend-docker-1:
-	docker run --name todolist-backend \
+.PHONY: run-task-tracker-backend-local
+run-task-tracker-backend-local:
+	docker run --name task-tracker-backend \
 		-p 3000:3000 \
 		--network backend \
 		--rm \
-		todolist-backend:docker-1
+		task-tracker/task-tracker-backend:local
 
-.PHONY: run-todolist-db
-run-todolist-db:
-	docker run --name todolist-db \
+.PHONY: run-task-tracker-db-local
+run-task-tracker-db-local:
+	docker run --name task-tracker-db \
 		--network backend \
 		--rm \
-		-v todolist-mongodb:/data/db \
-		mongo:8.2.1
+		-v task-tracker-mongodb:/data/db \
+		official/mongo:8.2.1
+	
+.PHONY: stop-task-tracker-local
+stop-task-tracker-local:
+	docker stop task-tracker-backend && \
+	docker stop task-tracker-db

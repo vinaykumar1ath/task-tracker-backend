@@ -1,4 +1,4 @@
-FROM node:19.6-alpine AS base
+FROM official/node:25.2.1-alpine AS base
 
 WORKDIR /backend
 
@@ -6,13 +6,13 @@ COPY package*.json .
 
 RUN --mount=type=cache,target=/backend/.npm \
     npm set cache /backend/.npm && \
-    npm ci --only=production  #only production build
+    npm ci --omit=dev  #only production build
 
 FROM base AS runner
 
 USER node
 
-ENV ENV_FILE=".env.docker"
+ENV ENV_FILE=".env.local"
 
 COPY . .
 

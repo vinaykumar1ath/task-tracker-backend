@@ -13,18 +13,23 @@ const env =async (filePath) => {
 			console.log("Invalid environemnt filepath")
 			process.exit(100)
 		}
-	}else if (process.env.NODE_ENV === 'test')
-		return '.env.test'
-	else if(process.env.NODE_ENV === 'container')
-		return '.env.container'
-	else if(process.env.NODE_ENV === 'production')
-		return '.env.production'
-	else
-		return '.env.test'
+	}
 }
-envset.config({
-	path: await env(process.env.ENV_FILE)
-})
+
+let env_path = ""
+if (process.env.ENV_STRING){
+	Object.assign(process.env, envset.parse(Buffer.from(process.env.ENV_STRING, 'base64')))
+	process.env.ENVSET = "true"
+} else if (process.env.ENV_FILE){
+	env_path = process.env.ENV_FILE
+} else {
+        env_path = ".env.test"
+}
+if(!process.env.ENVSET){
+	envset.config({
+		path: await env(env_path)
+	})
+}
 
 const port = process.env.API_PORT
 

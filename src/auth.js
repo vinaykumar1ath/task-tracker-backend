@@ -1,4 +1,4 @@
-import hasher from "crypto"      //module to generate hash of password
+import * as hasher from "node:crypto"      //module to generate hash of password
 import _ from "underscore"     // _ for isString function
 import {connectDB, users} from "./database.js" //import only users table
 import cookie_parser from 'cookie-parser'
