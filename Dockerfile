@@ -1,4 +1,4 @@
-FROM official/node:25.2.1-alpine AS base
+FROM node:25.2.1-alpine AS base
 
 WORKDIR /backend
 
@@ -11,8 +11,6 @@ RUN --mount=type=cache,target=/backend/.npm \
 FROM base AS runner
 
 USER node
-
-ENV ENV_FILE=".env.local"
 
 COPY . .
 
