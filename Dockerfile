@@ -10,8 +10,6 @@ RUN --mount=type=cache,target=/backend/.npm \
 
 FROM base AS runner
 
-USER node
-
 COPY . .
 
 CMD ["node", "src/index.js"]

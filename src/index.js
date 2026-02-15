@@ -1,65 +1,95 @@
-import fsp from 'fs/promises'
-import express from "express"
-import cors from 'cors'
-import envset from "dotenv"
-import morgan from 'morgan'
+import fs from 'fs'
+import envset from 'dotenv'
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 
-import {cookie_parser, auth_jwt, task_jwt, check, login, signup, logout } from "./auth.js"
+const envFile = (filePath) => {
+	if(!filePath) return;
+	try{
+		if(!fs.existsSync(filePath)) throw new Error("File not found");
+		envset.config({
+			path: filePath
+		})
+		process.env.ENVSET = "true"
+	} catch(error){
+		console.log("Invalid environemnt filepath")
+		console.error(error)
+		process.exit(100)
+	}
+}
 
-import { createTask, editTask, completeTask, deleteTask, queryUserTasks } from "./task.js"
+const envString = (str) => {
+	try{
+		Object.assign(process.env, envset.parse(Buffer.from(str, 'base64')))
+		process.env.ENVSET = "true"
+	} catch(error){
+		console.log("Invalid environemnt string")
+		console.error(error)
+		process.exit(100)
+	}
+}
 
-import { envString, envFile, envS3uri } from "./env.js"
+const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+
+function parseS3Uri(s3Uri) {
+  if (!s3Uri.startsWith("s3://")) throw new Error("Invalid S3 URI");
+  const parts = s3Uri.replace("s3://", "").split("/");
+  const Bucket = parts.shift();
+  const Key = parts.join("/");
+  return { Bucket, Key };
+}
+
+
+function streamToString(stream) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on("data", chunk => chunks.push(chunk));
+    stream.on("error", reject);
+    stream.on("end", () =>
+      resolve(Buffer.concat(chunks).toString("utf-8"))
+    );
+  });
+}
+
+const envS3uri = async (s3Uri) => {
+	try{
+		const { Bucket, Key } = parseS3Uri(s3Uri);
+
+		const command = new GetObjectCommand({ Bucket, Key });
+		const response = await s3.send(command);
+
+		const content = await streamToString(response.Body);
+		const s3Env = envset.parse(content);
+		for (const [key, value] of Object.entries(s3Env)) {
+			if (process.env[key] === undefined) {
+				process.env[key] = String(value);
+			}
+		}
+		process.env.ENVSET = "true"
+	}catch(error){
+		console.log("Invalid S3uri")
+		console.error(error)
+		process.exit(100)
+	}
+}
 
 if(process.env.ENVSET){
 	console.log("Environment variables already set because process.env.ENVSET, preoceeding with them")
 }else if(process.env.ENV_STRING){
 	envString(process.env.ENV_STRING)
-	console.log("Environment variables set using ENVSTRING")
+	console.log("Environment variables set using ENV_STRING")
 }else if(process.env.ENV_FILE){
 	envFile(process.env.ENV_FILE)
-	console.log("Environment variables set using ENV FILE")
+	console.log("Environment variables set using ENV_FILE")
 }else if(process.env.ENV_S3URI){
 	await envS3uri(process.env.ENV_S3URI)
-	console.log("Environment variables set using S3 URI")
+	console.log("Environment variables set using ENV_S3URI")
 }else {
 	console.log("No environment variables are provided, so Exiting")
 	process.exit(100)
 }
 
-const port = process.env.API_PORT
+import {server} from './server.js'
 
-const server = express()
-const auth = express.Router()
-const taskapi = express.Router()
-server.use(cors({
-  origin: process.env.ORIGIN_URL,
-  credentials: true,
-}));
-
-auth.use(cookie_parser())
-auth.use(express.json())
-auth.use(auth_jwt)
-auth.get("/check",check)
-auth.post("/login",login)
-auth.post("/signup",signup)
-auth.post("/logout",logout)
-
-taskapi.use(cookie_parser())
-taskapi.use(express.json())
-taskapi.use(task_jwt)
-taskapi.post("/create",createTask)
-taskapi.put("/edit",editTask)
-taskapi.put("/complete",completeTask)
-taskapi.get("/query",queryUserTasks)
-taskapi.delete("/delete",deleteTask)
-
-server.use(morgan('dev'))
-server.get("/",(req, res) => {
-	return res.status(200).send("todolist is UP and RUNNING")
-})
-server.use("/auth",auth)
-server.use("/task",taskapi)
-
- server.listen(port, ()=>{
-   console.log(`listening on ${port}`)
+ server.listen(process.env.API_PORT, ()=>{
+   console.log(`listening on ${process.env.API_PORT}`)
  })
